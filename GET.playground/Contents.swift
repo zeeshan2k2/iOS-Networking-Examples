@@ -5,51 +5,76 @@ import PlaygroundSupport
 PlaygroundPage.current.needsIndefiniteExecution = true
 
 
-// API
-// What are API/REST API/WebService
-// Why are they used in mobile applications
-// How to get data from API using Swift
-
-
-// Function to fetch data from a given URL and parse it
+// Function to fetch data from a given URL using GET request
 func getData() {
+    
     // Create a URLSession shared instance
     let session = URLSession.shared
     
     // Define the URL to fetch data from
-    let serviceUrl = URL(string: "https://jsonplaceholder.typicode.com/todos/1")
+    guard let serviceUrl = URL(string: "https://jsonplaceholder.typicode.com/todos/1") else {
+        print("Invalid URL")
+        return
+    }
+    
+    // Create a URLRequest (explicit GET request)
+    var request = URLRequest(url: serviceUrl)
+    
+    // Set HTTP method to GET
+    request.httpMethod = "GET"
     
     // Create a data task to fetch data from the URL
-    let task = session.dataTask(with: serviceUrl!) { (serviceData, serviceResponse, error) in
+    let task = session.dataTask(with: request) { (serviceData, serviceResponse, error) in
         
-        // Check if there was no error
-        if error == nil {
-            // Safely cast the response to HTTPURLResponse
-            let httpResponse = serviceResponse as! HTTPURLResponse
+        print("Response received")
+        
+        // Check if there was any network error
+        if let error = error {
+            print("Network Error:", error.localizedDescription)
+            return
+        }
+        
+        // Safely cast the response to HTTPURLResponse
+        guard let httpResponse = serviceResponse as? HTTPURLResponse else {
+            print("Invalid response")
+            return
+        }
+        
+        // Print status code
+        print("Status Code:", httpResponse.statusCode)
+        
+        // Check if the status code indicates success (200 OK)
+        if httpResponse.statusCode == 200 {
             
-            // Check if the status code indicates success (200 OK)
-            if httpResponse.statusCode == 200 {
-                // Attempt to parse the JSON data
-                do {
-                    // Convert the data into a JSON object with mutable containers
-                    let jsonData = try JSONSerialization.jsonObject(with: serviceData!, options: .mutableContainers)
-                    
-                    // Cast the JSON object to a Dictionary
-                    let result = jsonData as! Dictionary<String, Any>
+            // Ensure data is not nil
+            guard let data = serviceData else {
+                print("No data received")
+                return
+            }
+            
+            // Attempt to parse the JSON data
+            do {
+                // Convert the data into a JSON object
+                let jsonData = try JSONSerialization.jsonObject(with: data, options: [])
+                
+                // Cast the JSON object to a Dictionary
+                if let result = jsonData as? [String: Any] {
                     
                     // Print the value associated with the "id" key
-                    print("id = \(result["id"]!)")
-                } catch {
-                    // Handle JSON parsing error
-                    print("Error parsing JSON: \(error.localizedDescription)")
+                    print("id =", result["id"] ?? "")
+                    print("title =", result["title"] ?? "")
+                    print("userId =", result["userId"] ?? "")
+                    print("completed =", result["completed"] ?? "")
                 }
-            } else {
-                // Handle HTTP response status code error
-                print("HTTP Error: Status code \(httpResponse.statusCode)")
+                
+            } catch {
+                // Handle JSON parsing error
+                print("Error parsing JSON:", error.localizedDescription)
             }
+            
         } else {
-            // Handle error in fetching data
-            print("Network Error: \(error!.localizedDescription)")
+            // Handle HTTP response status code error
+            print("HTTP Error: Status code \(httpResponse.statusCode)")
         }
     }
     
@@ -59,6 +84,3 @@ func getData() {
 
 // Call the function to execute the network request
 getData()
-
-
-

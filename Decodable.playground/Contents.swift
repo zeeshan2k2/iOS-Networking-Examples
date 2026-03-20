@@ -28,27 +28,48 @@ struct Employee {
         let employeeApiUrl = "http://demo0333988.mockable.io/Employees"
 
         // Create a URLSession data task to fetch data from the API
-        URLSession.shared.dataTask(with: URL(string: employeeApiUrl)!) { (responseData, httpUrlResponse, error) in
+        URLSession.shared.dataTask(with: URL(string: employeeApiUrl)!) { (responseData, response, error) in
             
-            // Check if there was no error and data is present
-            if(error == nil && responseData != nil && responseData?.count != 0) {
-                // Create a JSON decoder to decode the data
-                let decoder = JSONDecoder()
-                do {
-                    // Decode the response data into an array of EmployeeResponse objects
-                    let result = try decoder.decode([EmployeeResponse].self, from: responseData!)
-
-                    // Loop through each employee in the result and print their name
-                    for employee in result {
-                        debugPrint(employee.name)
-                    }
-                } catch let error {
-                    // Print any errors that occur during decoding
-                    debugPrint("Error occurred while decoding = \(error.localizedDescription)")
-                }
+            // Handle network error
+            if let error = error {
+                debugPrint("Network error:", error.localizedDescription)
+                return
             }
-
-        }.resume() // Start the data task
+            
+            // Validate response
+            guard let httpResponse = response as? HTTPURLResponse else {
+                debugPrint("Invalid response")
+                return
+            }
+            
+            debugPrint("Status Code:", httpResponse.statusCode)
+            
+            // Ensure success status code
+            guard httpResponse.statusCode == 200 else {
+                debugPrint("Server error:", httpResponse.statusCode)
+                return
+            }
+            
+            // Ensure data exists
+            guard let data = responseData else {
+                debugPrint("No data received")
+                return
+            }
+            
+            let decoder = JSONDecoder()
+            
+            do {
+                let result = try decoder.decode([EmployeeResponse].self, from: data)
+                
+                for employee in result {
+                    debugPrint(employee.name)
+                }
+                
+            } catch {
+                debugPrint("Decoding error:", error.localizedDescription)
+            }
+            
+        }.resume()
     }
 }
 

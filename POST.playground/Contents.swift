@@ -10,41 +10,72 @@ struct Endpoint
 
 struct User
 {
-//     Function to register a new user
+    // Function to register a new user
     func registerUser()
     {
         // Setting the URLRequest with the register user endpoint
-        var urlRequest = URLRequest(url: URL(string: Endpoint.registerUser)!)
-        // Setting the HTTP method to POST as we are sending data to the server
-        urlRequest.httpMethod = "post"
-        // Data dictionary containing user details to be sent in the request body
+        guard let url = URL(string: Endpoint.registerUser) else {
+            print("Invalid URL")
+            return
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        
+        // Setting the HTTP method to POST
+        urlRequest.httpMethod = "POST"
+        
+        // Data dictionary containing user details
         let dataDictionary = ["name":"zeeshan", "email":"zeeshan15@gmail.com","password":"1234"]
         
-        // Using do-catch for error handling when converting the data dictionary to JSON
         do {
-            // Converting the data dictionary to JSON format
-            let requestBody = try JSONSerialization.data(withJSONObject: dataDictionary, options: .prettyPrinted)
+            // Convert dictionary to JSON data
+            let requestBody = try JSONSerialization.data(withJSONObject: dataDictionary, options: [])
             
-            // Setting the HTTP body of the request
+            // Set HTTP body
             urlRequest.httpBody = requestBody
-            // Adding the content-type header field to specify JSON data
-            urlRequest.addValue("application/json", forHTTPHeaderField: "content-type")
-
-        } catch let error {
-            // Handling any errors that occur during JSON serialization
-            debugPrint(error.localizedDescription)
+            
+            // Add header
+            urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+        } catch {
+            print("JSON Error:", error.localizedDescription)
+            return
         }
 
-        // Creating a data task to perform the network request
-        URLSession.shared.dataTask(with: urlRequest) { (data, httpUrlResponse, error) in
-            if(data != nil && data?.count != 0)
-            {
-                // Parsing the JSON response received from the server
-                let response = String(data: data!, encoding: .utf8)
-                print()
-                print("This is the post data")
-                debugPrint(response!)
+        URLSession.shared.dataTask(with: urlRequest) { (data, response, error) in
+            
+            // Handle network error
+            if let error = error {
+                print("Network Error:", error.localizedDescription)
+                return
             }
+            
+            // Validate response
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("Invalid response")
+                return
+            }
+            
+            print("Status Code:", httpResponse.statusCode)
+            
+            // Check success
+            guard (200...299).contains(httpResponse.statusCode) else {
+                print("Server Error:", httpResponse.statusCode)
+                return
+            }
+            
+            // Handle data
+            guard let data = data else {
+                print("No data received")
+                return
+            }
+            
+            let responseString = String(data: data, encoding: .utf8)
+            
+            print()
+            print("This is the post data")
+            print(responseString ?? "")
+            
         }.resume()
     }
 
